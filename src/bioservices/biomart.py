@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
-#
+#  Nick's Edit
 #  This file is part of bioservices software
 #
 #  Copyright (c) 2013-2014 - EBI-EMBL
 #
 #  File author(s):
-#
-#
+# Others and Nick Weiner
+#   July 2017
 #  Distributed under the GPLv3 License.
 #  See accompanying file LICENSE.txt or copy at
 #      http://www.gnu.org/licenses/gpl-3.0.html
@@ -219,14 +219,17 @@ class BioMart(REST):
             self._host = None
         else:
             self.host = host
-
+        # Nick - likely needs parameters sent here to get different filetype outputs
         self._biomartQuery = BioMartQuery()
 
     def _get_host(self):
         return self._host
     def _set_host(self, host):
         import requests
-        url = "http://%s/biomart/martservice" % host
+        secure = ''
+        if host == "phytozome.jgi.doe.gov":
+            secure = 's'
+        url = "http%s://%s/biomart/martservice" % (secure, host)
         request = requests.head(url)
         if request.status_code in [200]:
             self._host = host
@@ -415,8 +418,11 @@ class BioMart(REST):
             valid_filters = self.filters(dataset).keys()
             if name not in valid_filters:
                 raise BioServicesError("Invalid filter name. ")
-
-        _filter = """        <Filter name = "%s" value = "%s"/>""" % (name, value)
+        _filter = ''
+        if '=' in value:
+            _filter = """        <Filter name = "%s" %s/>""" % (name, value)
+        else:
+            _filter = """        <Filter name = "%s" value = "%s"/>""" % (name, value)
         return _filter
 
     @require_host
@@ -515,12 +521,12 @@ class BioMart(REST):
 
 
 class BioMartQuery(object):
-    def __init__(self, version="1.0", virtualScheme="default"):
-
+    def __init__(self, version="1.0", virtualScheme="zome_mart", formatter="FASTA"):
+            #previously virtualScheme = "default", formatter = "TSV"
         params = {
             "version": version,
             "virtualSchemaName": virtualScheme,
-            "formatter": "TSV",
+            "formatter": formatter,
             "header":0,
             "uniqueRows":0,
             "configVersion":"0.6"
@@ -562,5 +568,3 @@ datasetConfigVersion = "%(configVersion)s" >\n""" % params
             xml += line + "\n"
         xml += self.footer
         return xml
-
-
