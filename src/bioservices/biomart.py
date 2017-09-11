@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
-#  Nick's Edit
+#
 #  This file is part of bioservices software
 #
-#  Copyright (c) 2013-2014 - EBI-EMBL
+#  Copyright (c) 2013-2017 - EBI-EMBL
 #
-#  File author(s):
-# Others and Nick Weiner
-#   July 2017
+#  File author(s): File author(s): Nick Weiner and others
+#
+#
 #  Distributed under the GPLv3 License.
 #  See accompanying file LICENSE.txt or copy at
 #      http://www.gnu.org/licenses/gpl-3.0.html
@@ -170,8 +170,7 @@ class BioMart(REST):
                     </Dataset>
                     </Query>"""
 
-
-    def __init__(self, host=None, verbose=False, cache=False):
+    def __init__(self, host=None, verbose=False, cache=False, secure=False):
         """.. rubric:: Constructor
 
 
@@ -212,32 +211,39 @@ class BioMart(REST):
         self._display_names = None
         self._valid_attributes = None
         self._hosts = None
+        self._secure = secure
 
         if host is None:
             host = "www.biomart.org"
-            url = "http://%s/biomart/martservice" % host
+            url = "http://{}/biomart/martservice".format(host)
             self._host = None
         else:
             self.host = host
-        # Nick - likely needs parameters sent here to get different filetype outputs
         self._biomartQuery = BioMartQuery()
+
+    def custom_query(self, **args):
+        self._biomartQuery = BioMartQuery(**args)
 
     def _get_host(self):
         return self._host
+
     def _set_host(self, host):
         import requests
         secure = ''
-        if host == "phytozome.jgi.doe.gov":
+        if self._secure:
             secure = 's'
-        url = "http%s://%s/biomart/martservice" % (secure, host)
+        url = "http{}://{}/biomart/martservice".format(secure, host)
         request = requests.head(url)
         if request.status_code in [200]:
             self._host = host
             self.url = url
             self._init()
         else:
-            print("host %s is not reachable " % host)
+            print("host {} is not reachable ".format(host))
     host = property(_get_host, _set_host)
+
+    def _set_format(self, format):
+        self.format = format
 
     def _init(self):
         temp = self.debugLevel
@@ -521,15 +527,15 @@ class BioMart(REST):
 
 
 class BioMartQuery(object):
-    def __init__(self, version="1.0", virtualScheme="zome_mart", formatter="FASTA"):
-            #previously virtualScheme = "default", formatter = "TSV"
+    def __init__(self, version="1.0", virtualScheme="default",
+                 formatter="TSV", header=0, unique=0, configVer="0.6"):
         params = {
             "version": version,
             "virtualSchemaName": virtualScheme,
             "formatter": formatter,
-            "header":0,
-            "uniqueRows":0,
-            "configVersion":"0.6"
+            "header": header,
+            "uniqueRows": unique,
+            "configVersion": configVer
 
         }
 
@@ -568,3 +574,5 @@ datasetConfigVersion = "%(configVersion)s" >\n""" % params
             xml += line + "\n"
         xml += self.footer
         return xml
+
+
